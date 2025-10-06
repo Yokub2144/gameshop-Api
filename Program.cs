@@ -9,7 +9,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 36)) // ใส่ version MySQL ของ server
+        new MySqlServerVersion(new Version(8, 0, 36))
     )
 );
 
@@ -24,16 +24,32 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// **เพิ่ม CORS **
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "https://localhost:4200",
+                "https://gameshop-api-production.up.railway.app"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
+
+app.UseCors("AllowAngular");
 
 app.MapOpenApi();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-
 app.UseHttpsRedirection();
-
 
 app.MapGet("/", () => "Hello gameshop");
 app.MapGet("/User", async (AppDbContext db) =>
