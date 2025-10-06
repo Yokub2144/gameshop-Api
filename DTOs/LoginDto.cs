@@ -4,8 +4,8 @@ namespace Gameshop_Api.DTOs
 {
     public class LoginDto
     {
-        [Required]
-        [EmailAddress]
+        [Required]           // บังคับต้องกรอก
+        [EmailAddress]       // ต้องเป็นรูปแบบอีเมล
         public string email { get; set; }
 
         [Required]
