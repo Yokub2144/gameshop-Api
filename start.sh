@@ -1,10 +1,11 @@
 #!/bin/bash
+set -e  # ออกทันทีถ้ามีคำสั่งใดล้มเหลว
 
-# ออกถ้ามีคำสั่งใดล้มเหลว
-set -e
+echo "Restoring dependencies..."
+dotnet restore
 
-echo "Building the project..."
-dotnet build
+echo "Building and publishing the project..."
+dotnet publish -c Release -o out
 
-echo "Running the project..."
-dotnet run --urls "http://0.0.0.0:5000"
+echo "Starting the application..."
+dotnet out/GameshopApi.dll --urls "http://0.0.0.0:5000"
