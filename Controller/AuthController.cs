@@ -37,7 +37,7 @@ namespace Gameshop_Api.Controllers
 
             if (dto.profile_image != null && dto.profile_image.Length > 0)
             {
-                var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
+                var uploadsFolder = Path.Combine(_env.ContentRootPath, "uploads");
                 if (!Directory.Exists(uploadsFolder))
                     Directory.CreateDirectory(uploadsFolder);
 
@@ -49,7 +49,7 @@ namespace Gameshop_Api.Controllers
                     await dto.profile_image.CopyToAsync(stream);
                 }
 
-                user.profile_image = $"Uploads/{fileName}";
+                user.profile_image = $"uploads/{fileName}";
             }
 
             _context.Users.Add(user);

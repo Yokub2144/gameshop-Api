@@ -44,7 +44,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "Uploads");
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
 
 if (!Directory.Exists(uploadsPath))
 {
@@ -54,7 +54,7 @@ if (!Directory.Exists(uploadsPath))
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/Uploads"
+    RequestPath = "/uploads"
 });
 
 app.UseCors("AllowAngular");
