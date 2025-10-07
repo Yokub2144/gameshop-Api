@@ -18,17 +18,8 @@ namespace Gameshop_Api.Controllers
             _context = context;
             _env = env;
         }
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-                return NotFound(new { message = "User not found" });
-
-            return Ok(user);
-        }
         [HttpGet]
-        public async Task<ActionResult> GetAllGames()
+        public async Task<ActionResult<IEnumerable<Game>>> GetAllGames()
         {
             var games = await _context.Games.ToListAsync();
             return Ok(games);
