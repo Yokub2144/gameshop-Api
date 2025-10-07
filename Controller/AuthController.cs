@@ -3,7 +3,8 @@ using Gameshop_Api.DTOs;
 using Gameshop_Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace Gameshop_Api.Controllers
 {
@@ -23,7 +24,7 @@ namespace Gameshop_Api.Controllers
         // POST /Auth/Register
         [HttpPost("Register")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Register([FromForm] RegisterDto dto)
+        public async Task<IActionResult> Register([FromForm] RegisterDto dto, [FromServices] Cloudinary cloudinary)
         {
             if (await _context.Users.AnyAsync(u => u.email == dto.email))
                 return BadRequest("Email นี้มีผู้ใช้งานแล้ว");
@@ -37,25 +38,29 @@ namespace Gameshop_Api.Controllers
 
             if (dto.profile_image != null && dto.profile_image.Length > 0)
             {
-                var uploadsFolder = Path.Combine(_env.ContentRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.profile_image.FileName);
-                var filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // 1. เตรียมข้อมูลเพื่ออัปโหลด
+                using var stream = dto.profile_image.OpenReadStream();
+                var uploadParams = new ImageUploadParams()
                 {
-                    await dto.profile_image.CopyToAsync(stream);
+                    File = new FileDescription(dto.profile_image.FileName, stream),
+                    // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน (optional)
+                    PublicId = Guid.NewGuid().ToString()
+                };
+
+                // 2. อัปโหลดไฟล์
+                var uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+                if (uploadResult.Error != null)
+                {
+                    return BadRequest($"อัปโหลดรูปภาพไม่สำเร็จ: {uploadResult.Error.Message}");
                 }
-
-                user.profile_image = $"uploads/{fileName}";
+                user.profile_image = uploadResult.SecureUrl.ToString();
             }
-
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "สมัครสมาชิกสำเร็จ", user.uid, user.fullname, user.email, user.profile_image, });
+
         }
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
