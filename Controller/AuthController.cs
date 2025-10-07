@@ -55,7 +55,7 @@ namespace Gameshop_Api.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "สมัครสมาชิกสำเร็จ", user.uid, user.fullname, user.email, user.profile_image });
+            return Ok(new { message = "สมัครสมาชิกสำเร็จ", user.uid, user.fullname, user.email, user.profile_image, user.balance });
         }
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
@@ -76,7 +76,8 @@ namespace Gameshop_Api.Controllers
                     user.fullname,
                     user.email,
                     user.role,
-                    user.profile_image
+                    user.profile_image,
+                    user.balance
                 },
 
             });
