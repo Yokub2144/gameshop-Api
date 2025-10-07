@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace Gameshop_Api.Controllers
 {
@@ -32,7 +34,7 @@ namespace Gameshop_Api.Controllers
 
         // PUT: /User/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, [FromForm] UpdateUserDto dto)
+        public async Task<IActionResult> UpdateUser(int id, [FromForm] UpdateUserDto dto, [FromServices] Cloudinary cloudinary)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
@@ -41,27 +43,29 @@ namespace Gameshop_Api.Controllers
             // อัปเดตข้อมูล
             user.fullname = dto.Fullname ?? user.fullname;
             user.email = dto.Email ?? user.email;
-            if (!string.IsNullOrEmpty(dto.Password))
-            {
-                using var sha256 = SHA256.Create();
-                var hashed = sha256.ComputeHash(Encoding.UTF8.GetBytes(dto.Password));
-                user.password = Convert.ToBase64String(hashed);
-            }
+            user.password = dto.Password ?? user.password;
 
             // อัปโหลดรูปถ้ามี
-            if (dto.ProfileImage != null)
+
+            if (dto.profile_image != null && dto.profile_image.Length > 0)
             {
-                var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
+                // 1. เตรียมข้อมูลเพื่ออัปโหลด
+                using var stream = dto.profile_image.OpenReadStream();
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(dto.profile_image.FileName, stream),
+                    // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน (optional)
+                    PublicId = Guid.NewGuid().ToString()
+                };
 
-                var fileName = $"{Guid.NewGuid()}_{dto.ProfileImage.FileName}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
+                // 2. อัปโหลดไฟล์
+                var uploadResult = await cloudinary.UploadAsync(uploadParams);
 
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await dto.ProfileImage.CopyToAsync(stream);
-
-                user.profile_image = fileName;
+                if (uploadResult.Error != null)
+                {
+                    return BadRequest($"อัปโหลดรูปภาพไม่สำเร็จ: {uploadResult.Error.Message}");
+                }
+                user.profile_image = uploadResult.SecureUrl.ToString();
             }
 
             _context.Users.Update(user);
