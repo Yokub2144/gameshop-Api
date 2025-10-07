@@ -24,5 +24,15 @@ namespace Gameshop_Api.Controllers
             var games = await _context.Games.ToListAsync();
             return Ok(games);
         }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetGameById(int id)
+        {
+            var games = await _context.Games.FindAsync(id);
+            if (games == null)
+                return NotFound(new { message = "User not found" });
+
+            return Ok(games);
+        }
     }
 }
