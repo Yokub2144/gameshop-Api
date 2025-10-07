@@ -27,6 +27,11 @@ namespace Gameshop_Api.Controllers
 
             return Ok(user);
         }
-
+        [HttpGet]
+        public async Task<ActionResult> GetAllGames()
+        {
+            var games = await _context.Games.ToListAsync();
+            return Ok(games);
+        }
     }
 }
