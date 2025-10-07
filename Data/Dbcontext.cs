@@ -21,9 +21,10 @@ namespace Gameshop_Api.Data
                 entity.Property(e => e.uid).HasColumnName("uid");
                 entity.Property(e => e.fullname).HasColumnName("fullname");
                 entity.Property(e => e.email).HasColumnName("email");
+                entity.Property(e => e.password).HasColumnName("password");
                 entity.Property(e => e.profile_image).HasColumnName("profile_image");
                 entity.Property(e => e.role).HasColumnName("role");
-                entity.Property(e => e.balance).HasColumnName("balance").HasColumnType("decimal(10,2)");
+                entity.Property(e => e.balance).HasColumnName("balance").HasColumnType("decimal(10,2)").HasDefaultValue(0);
             });
             // modelBuilder.Entity<Game>(entity =>
             //            {
