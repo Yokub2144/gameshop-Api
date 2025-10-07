@@ -9,7 +9,6 @@ namespace Gameshop_Api.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<User> Users { get; set; }
-        public DbSet<Game> Games { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,19 +24,6 @@ namespace Gameshop_Api.Data
                 entity.Property(e => e.profile_image).HasColumnName("profile_image");
                 entity.Property(e => e.role).HasColumnName("role");
             });
-            // modelBuilder.Entity<Game>(entity =>
-            //            {
-            //                entity.ToTable("Games"); // ชื่อตารางใน DB
-            //                entity.HasKey(e => e.game_id);
-
-            //                entity.Property(e => e.game_id).HasColumnName("game_id");
-            //                entity.Property(e => e.title).HasColumnName("title").IsRequired();
-            //                entity.Property(e => e.rank).HasColumnName("rank");
-            //                entity.Property(e => e.category).HasColumnName("category");
-            //                entity.Property(e => e.price).HasColumnName("price").HasColumnType("decimal(10,2)");
-            //                entity.Property(e => e.release_date).HasColumnName("release_date");
-            //                entity.Property(e => e.image_url).HasColumnName("image_url");
-            //            });
 
 
         }
