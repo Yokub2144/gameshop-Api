@@ -29,9 +29,9 @@ builder.Services.AddCors(options =>
     });
 });
 var cloudinaryAccount = new Account(
-    builder.Configuration["dzicj4dci"],
-    builder.Configuration["979858885916716"],
-    builder.Configuration["lhH4qrG44s7KvXJEMbPv9cOE1RQ"]
+    builder.Configuration["Cloudinary:CloudName"],
+    builder.Configuration["Cloudinary:ApiKey"],
+    builder.Configuration["Cloudinary:ApiSecret"]
 );
 // เพิ่ม Cloudinary เป็น Singleton Service
 builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
