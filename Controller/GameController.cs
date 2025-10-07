@@ -18,7 +18,7 @@ namespace Gameshop_Api.Controllers
             _context = context;
             _env = env;
         }
-        [HttpGet]
+        [HttpGet("games")]
         public async Task<IActionResult> GetAllGames()
         {
             var games = await _context.Games
