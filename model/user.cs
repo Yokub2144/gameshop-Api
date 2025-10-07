@@ -11,6 +11,6 @@ namespace Gameshop_Api.Models
         public string password { get; set; }
         public string? profile_image { get; set; }
         public string role { get; set; } = "user";
-        public decimal balance { get; set; } = 0;
+
     }
 }
