@@ -14,9 +14,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 var cloudinaryAccount = new Account(
-    builder.Configuration["Cloudinary:dzicj4dci"],
-    builder.Configuration["Cloudinary:979858885916716"],
-    builder.Configuration["Cloudinary:lhH4qrG44s7KvXJEMbPv9cOE1RQ"]
+    builder.Configuration["dzicj4dci"],
+    builder.Configuration["979858885916716"],
+    builder.Configuration["lhH4qrG44s7KvXJEMbPv9cOE1RQ"]
 );
 // เพิ่ม Cloudinary เป็น Singleton Service
 builder.Services.AddSingleton(new Cloudinary(cloudinaryAccount));
