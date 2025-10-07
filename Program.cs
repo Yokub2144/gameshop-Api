@@ -13,6 +13,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         new MySqlServerVersion(new Version(8, 0, 36))
     )
 );
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "https://localhost:4200",
+                "https://gameshop-api-production.up.railway.app"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 var cloudinaryAccount = new Account(
     builder.Configuration["dzicj4dci"],
     builder.Configuration["979858885916716"],
@@ -33,20 +48,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // **เพิ่ม CORS **
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAngular", policy =>
-    {
-        policy.WithOrigins(
-                "http://localhost:4200",
-                "https://localhost:4200",
-                "https://gameshop-api-production.up.railway.app"
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
+
 
 var app = builder.Build();
 
