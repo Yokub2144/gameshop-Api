@@ -3,8 +3,7 @@ using Gameshop_Api.DTOs;
 using Gameshop_Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
-using System.Text;
+
 
 namespace Gameshop_Api.Controllers
 {

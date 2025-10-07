@@ -9,6 +9,7 @@ namespace Gameshop_Api.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<User> Users { get; set; }
+        public DbSet<Game> Games { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -23,6 +24,8 @@ namespace Gameshop_Api.Data
                 entity.Property(e => e.profile_image).HasColumnName("profile_image");
                 entity.Property(e => e.role).HasColumnName("role");
             });
+
+
 
         }
     }
