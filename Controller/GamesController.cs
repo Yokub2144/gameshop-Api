@@ -10,12 +10,12 @@ namespace Gameshop_Api.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class Admin_GameController : ControllerBase
+    public class GamesController : ControllerBase
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
 
-        public Admin_GameController(AppDbContext context, IWebHostEnvironment env)
+        public GamesController(AppDbContext context, IWebHostEnvironment env)
         {
             _context = context;
             _env = env;
