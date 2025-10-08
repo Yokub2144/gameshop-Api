@@ -3,6 +3,8 @@ using Gameshop_Api.DTOs;
 using Gameshop_Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
 
 namespace Gameshop_Api.Controllers
 {
@@ -38,7 +40,7 @@ namespace Gameshop_Api.Controllers
         // POST /Game/AddGame
         [HttpPost("AddGame")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> AddGame([FromForm] AddgameDto dto)
+        public async Task<IActionResult> Addgame([FromForm] AddgameDto dto, [FromServices] Cloudinary cloudinary)
         {
 
             if (string.IsNullOrWhiteSpace(dto.title))
@@ -64,8 +66,28 @@ namespace Gameshop_Api.Controllers
                 price = dto.price,
                 release_date = dto.release_date,
                 image_url = "",
-                rank = dto.rank
+
             };
+            if (dto.image_url != null && dto.image_url.Length > 0)
+            {
+                // 1. เตรียมข้อมูลเพื่ออัปโหลด
+                using var stream = dto.image_url.OpenReadStream();
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(dto.image_url.FileName, stream),
+                    // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน (optional)
+                    PublicId = Guid.NewGuid().ToString()
+                };
+
+                // 2. อัปโหลดไฟล์
+                var uploadResult = await cloudinary.UploadAsync(uploadParams);
+
+                if (uploadResult.Error != null)
+                {
+                    return BadRequest($"อัปโหลดรูปภาพไม่สำเร็จ: {uploadResult.Error.Message}");
+                }
+                game.image_url = uploadResult.SecureUrl.ToString();
+            }
 
             try
             {
