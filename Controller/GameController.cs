@@ -64,7 +64,7 @@ namespace Gameshop_Api.Controllers
                 detail = dto.detail,
                 category = dto.category,
                 price = dto.price,
-                release_date = dto.release_date,
+                release_date = dto.release_date ?? DateTime.Now,
                 image_url = "",
 
             };
