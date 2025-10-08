@@ -111,6 +111,22 @@ namespace Gameshop_Api.Controllers
             {
                 return StatusCode(500, $"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {ex.Message}");
             }
+
+
+        }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteGame(int id)
+        {
+            var game = await _context.Games.FindAsync(id);
+            if (game == null)
+            {
+                return NotFound(new { message = "เกมไม่พบ" });
+            }
+
+            _context.Games.Remove(game);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "ลบเกมเรียบร้อยแล้ว" });
         }
     }
 }
