@@ -37,6 +37,8 @@ namespace Gameshop_Api.Data
                          entity.Property(e => e.price).HasColumnName("price");
                          entity.Property(e => e.release_date).HasColumnName("release_date");
                          entity.Property(e => e.image_url).HasColumnName("image_url");
+                         entity.Property(e => e.detail).HasColumnName("detail");
+
                      });
 
         }

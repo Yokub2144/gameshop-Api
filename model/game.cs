@@ -12,6 +12,6 @@ namespace Gameshop_Api.Models
         public decimal price { get; set; } = 0;
         public DateTime? release_date { get; set; }
         public string image_url { get; set; }
-
+        public string detail { get; set; }
     }
 }
