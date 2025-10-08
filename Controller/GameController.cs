@@ -34,5 +34,61 @@ namespace Gameshop_Api.Controllers
 
             return Ok(games);
         }
+
+        // POST /Game/AddGame
+        [HttpPost("AddGame")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AddGame([FromForm] AddgameDto dto)
+        {
+
+            if (string.IsNullOrWhiteSpace(dto.title))
+                return BadRequest("กรุณากรอกชื่อเกม");
+
+            if (string.IsNullOrWhiteSpace(dto.detail))
+                return BadRequest("กรุณากรอกรายละเอียดเกม");
+
+            if (string.IsNullOrWhiteSpace(dto.category))
+                return BadRequest("กรุณาเลือกประเภทเกม");
+
+            if (dto.price <= 0)
+                return BadRequest("กรุณากรอกราคาที่ถูกต้อง");
+
+
+            if (await _context.Games.AnyAsync(g => g.title == dto.title))
+                return BadRequest("ชื่อเกมนี้มีอยู่ในระบบแล้ว");
+            var game = new Game
+            {
+                title = dto.title,
+                detail = dto.detail,
+                category = dto.category,
+                price = dto.price,
+                release_date = dto.release_date,
+                image_url = "",
+                rank = dto.rank
+            };
+
+            try
+            {
+                _context.Games.Add(game);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "เพิ่มเกมสำเร็จ",
+                    game_id = game.game_Id,
+                    title = game.title,
+                    category = game.category,
+                    price = game.price,
+                    release_date = game.release_date,
+                    detail = game.detail,
+                    image_url = game.image_url,
+                    rank = game.rank
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {ex.Message}");
+            }
+        }
     }
 }

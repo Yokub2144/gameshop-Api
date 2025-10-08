@@ -5,16 +5,13 @@ namespace Gameshop_Api.DTOs
 {
     public class AddgameDto
     {
-        [Required]
+        public int game_Id { get; set; }
         public string title { get; set; }
-
-        [Required]
-        [EmailAddress]
-        public string email { get; set; }
-
-        [Required]
-        public string password { get; set; }
-
-        public IFormFile? profile_image { get; set; }
+        public int rank { get; set; }
+        public string category { get; set; }
+        public decimal price { get; set; } = 0;
+        public DateTime? release_date { get; set; }
+        public string image_url { get; set; }
+        public string detail { get; set; }
     }
 }
