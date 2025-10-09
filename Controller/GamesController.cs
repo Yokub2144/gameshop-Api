@@ -114,6 +114,80 @@ namespace Gameshop_Api.Controllers
 
 
         }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateGame(
+     int id,
+     [FromForm] UpdateGameDto dto,
+     [FromServices] Cloudinary cloudinary)
+        {
+            try
+            {
+                var game = await _context.Games.FindAsync(id);
+                if (game == null)
+                    return NotFound(new { message = "ไม่พบเกมนี้" });
+
+                //  อัปเดตเฉพาะ field ที่ส่งมา
+                game.title = !string.IsNullOrEmpty(dto.title) ? dto.title : game.title;
+                game.category = !string.IsNullOrEmpty(dto.category) ? dto.category : game.category;
+                game.price = dto.price > 0 ? dto.price : game.price;
+                game.detail = !string.IsNullOrEmpty(dto.detail) ? dto.detail : game.detail;
+                game.release_date = dto.release_date ?? game.release_date;
+
+                // อัปโหลดรูปใหม่ไป Cloudinary ถ้ามีไฟล์ส่งมา
+                if (dto.image_url != null && dto.image_url.Length > 0)
+                {
+                    //  อัปโหลดไป Cloudinary
+                    using var stream = dto.image_url.OpenReadStream();
+                    var uploadParams = new ImageUploadParams
+                    {
+                        File = new FileDescription(dto.image_url.FileName, stream),
+                        PublicId = "game_" + Guid.NewGuid().ToString(), // ป้องกันชื่อซ้ำ
+                        Folder = "game_images" // เก็บแยกในโฟลเดอร์
+                    };
+
+                    var uploadResult = await cloudinary.UploadAsync(uploadParams);
+                    if (uploadResult.Error != null)
+                        return BadRequest($"อัปโหลดรูปภาพไม่สำเร็จ: {uploadResult.Error.Message}");
+
+                    //  ลบรูปเก่าใน Cloudinary ถ้ามี (optional)
+                    if (!string.IsNullOrEmpty(game.image_url))
+                    {
+                        try
+                        {
+                            // ดึง public_id เดิมจาก URL เก่า (เช่น "game_images/xxxxx")
+                            var oldPublicId = game.image_url.Split('/')
+                                .SkipWhile(part => part != "game_images")
+                                .Skip(1)
+                                .FirstOrDefault()?.Split('.').FirstOrDefault();
+
+                            if (!string.IsNullOrEmpty(oldPublicId))
+                            {
+                                await cloudinary.DestroyAsync(new DeletionParams("game_images/" + oldPublicId));
+                            }
+                        }
+                        catch { }
+                    }
+
+                    // บันทึก URL ใหม่
+                    game.image_url = uploadResult.SecureUrl.ToString();
+                }
+
+                // บันทึกการเปลี่ยนแปลงใน Database
+                _context.Games.Update(game);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "อัปเดตข้อมูลเกมสำเร็จ",
+                    data = game
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "เกิดข้อผิดพลาด: " + ex.Message });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteGame(int id)
         {
