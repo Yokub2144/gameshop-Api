@@ -131,38 +131,5 @@ namespace Gameshop_Api.Controllers
             }
         }
 
-        // GET: Cart/GetCartCount/{uid}
-        [HttpGet("GetCartCount/{uid}")]
-        public async Task<IActionResult> GetCartCount(int uid)
-        {
-            try
-            {
-                var count = await _context.Cart.CountAsync(c => c.uid == uid);
-                return Ok(new { count });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
-
-        // GET: Cart/GetCartTotal/{uid}
-        [HttpGet("GetCartTotal/{uid}")]
-        public async Task<IActionResult> GetCartTotal(int uid)
-        {
-            try
-            {
-                var total = await _context.Cart
-                    .Where(c => c.uid == uid)
-                    .Include(c => c.Game)
-                    .SumAsync(c => c.Game.price);
-
-                return Ok(new { total });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = ex.Message });
-            }
-        }
     }
 }
