@@ -18,9 +18,6 @@ namespace Gameshop_Api.Models
         [Column("game_id")]
         public int game_id { get; set; }
 
-        [Column("added_at")]
-        public DateTime added_at { get; set; } = DateTime.Now;
-
         // Navigation Properties
         [ForeignKey("uid")]
         public virtual User? User { get; set; }

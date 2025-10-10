@@ -34,7 +34,7 @@ namespace Gameshop_Api.Controllers
                 {
                     uid = dto.uid,
                     game_id = dto.game_id,
-                    added_at = DateTime.Now
+
                 };
 
                 _context.Cart.Add(cart);
@@ -70,9 +70,9 @@ namespace Gameshop_Api.Controllers
                         image_url = c.Game.image_url,
                         category = c.Game.category,
                         rank = c.Game.rank,
-                        added_at = c.added_at
+
                     })
-                    .OrderByDescending(c => c.added_at)
+
                     .ToListAsync();
 
                 return Ok(cartItems);
