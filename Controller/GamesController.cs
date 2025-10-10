@@ -3,180 +3,166 @@ using Gameshop_Api.DTOs;
 using Gameshop_Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CloudinaryDotNet;
-using CloudinaryDotNet.Actions;
 
 namespace Gameshop_Api.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class GamesController : ControllerBase
+    public class CartController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _env;
 
-        public GamesController(AppDbContext context, IWebHostEnvironment env)
+        public CartController(AppDbContext context)
         {
             _context = context;
-            _env = env;
-        }
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Game>>> GetAllGames()
-        {
-            var games = await _context.Games.ToListAsync();
-            return Ok(games);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetGameById(int id)
+        // POST: Cart/AddToCart
+        [HttpPost("AddToCart")]
+        public async Task<IActionResult> AddToCart([FromBody] AddToCartDto dto)
         {
-            var games = await _context.Games.FindAsync(id);
-            if (games == null)
-                return NotFound(new { message = "User not found" });
-
-            return Ok(games);
-        }
-
-        // POST /Game/AddGame
-        [HttpPost("AddGame")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Addgame([FromForm] AddgameDto dto, [FromServices] Cloudinary cloudinary)
-        {
-
-            if (string.IsNullOrWhiteSpace(dto.title))
-                return BadRequest("กรุณากรอกชื่อเกม");
-
-            if (string.IsNullOrWhiteSpace(dto.detail))
-                return BadRequest("กรุณากรอกรายละเอียดเกม");
-
-            if (string.IsNullOrWhiteSpace(dto.category))
-                return BadRequest("กรุณาเลือกประเภทเกม");
-
-            if (dto.price <= 0)
-                return BadRequest("กรุณากรอกราคาที่ถูกต้อง");
-
-
-            if (await _context.Games.AnyAsync(g => g.title == dto.title))
-                return BadRequest("ชื่อเกมนี้มีอยู่ในระบบแล้ว");
-            var game = new Game
-            {
-                title = dto.title,
-                detail = dto.detail,
-                category = dto.category,
-                price = dto.price,
-                release_date = dto.release_date ?? DateTime.Now,
-                image_url = "",
-
-            };
-            if (dto.image_url != null && dto.image_url.Length > 0)
-            {
-                // 1. เตรียมข้อมูลเพื่ออัปโหลด
-                using var stream = dto.image_url.OpenReadStream();
-                var uploadParams = new ImageUploadParams()
-                {
-                    File = new FileDescription(dto.image_url.FileName, stream),
-                    // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน (optional)
-                    PublicId = Guid.NewGuid().ToString()
-                };
-
-                // 2. อัปโหลดไฟล์
-                var uploadResult = await cloudinary.UploadAsync(uploadParams);
-
-                if (uploadResult.Error != null)
-                {
-                    return BadRequest($"อัปโหลดรูปภาพไม่สำเร็จ: {uploadResult.Error.Message}");
-                }
-                game.image_url = uploadResult.SecureUrl.ToString();
-            }
-
             try
             {
-                _context.Games.Add(game);
+                // ตรวจสอบว่ามีในตะกร้าอยู่แล้วหรือไม่
+                var exists = await _context.Cart
+                    .AnyAsync(c => c.uid == dto.uid && c.game_id == dto.game_id);
+
+                if (exists)
+                    return BadRequest(new { message = "เกมนี้มีในตะกร้าอยู่แล้ว" });
+
+                var cart = new Cart
+                {
+                    uid = dto.uid,
+                    game_id = dto.game_id,
+                    added_at = DateTime.Now
+                };
+
+                _context.Cart.Add(cart);
                 await _context.SaveChangesAsync();
 
                 return Ok(new
                 {
-                    message = "เพิ่มเกมสำเร็จ",
-                    game_id = game.game_Id,
-                    title = game.title,
-                    category = game.category,
-                    price = game.price,
-                    release_date = game.release_date,
-                    detail = game.detail,
-                    image_url = game.image_url,
-                    rank = game.rank
+                    message = "เพิ่มเกมลงตะกร้าสำเร็จ",
+                    cart_id = cart.cart_id
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {ex.Message}");
+                return StatusCode(500, new { message = ex.Message });
             }
-
-
         }
 
-        // PUT /Game/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateGame(
-        int id,
-        [FromForm] UpdateGameDto dto,
-        [FromServices] Cloudinary cloudinary)
+        // GET: Cart/GetCart/{uid}
+        [HttpGet("GetCart/{uid}")]
+        public async Task<IActionResult> GetCart(int uid)
         {
-            var game = await _context.Games.FindAsync(id);
-            if (game == null)
-                return NotFound(new { message = "Game not found" });
-
-            //  อัปเดตข้อมูลทั่วไป
-            game.title = dto.title ?? game.title;
-            game.category = dto.category ?? game.category;
-            game.price = dto.price > 0 ? dto.price : game.price;
-            game.detail = dto.detail ?? game.detail;
-            game.release_date = dto.release_date ?? game.release_date;
-
-            //  อัปโหลดรูปถ้ามีไฟล์ส่งมา
-            if (dto.image_url != null && dto.image_url.Length > 0)
+            try
             {
-                using var stream = dto.image_url.OpenReadStream();
-                var uploadParams = new ImageUploadParams
+                var cartItems = await _context.Cart
+                    .Where(c => c.uid == uid)
+                    .Include(c => c.Game)
+                    .Select(c => new
+                    {
+                        cart_id = c.cart_id,
+                        game_id = c.game_id,
+                        title = c.Game.title,
+                        price = c.Game.price,
+                        image_url = c.Game.image_url,
+                        category = c.Game.category,
+                        rank = c.Game.rank,
+                        added_at = c.added_at
+                    })
+                    .OrderByDescending(c => c.added_at)
+                    .ToListAsync();
+
+                return Ok(cartItems);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // DELETE: Cart/RemoveFromCart/{cartId}
+        [HttpDelete("RemoveFromCart/{cartId}")]
+        public async Task<IActionResult> RemoveFromCart(int cartId)
+        {
+            try
+            {
+                var cart = await _context.Cart.FindAsync(cartId);
+
+                if (cart == null)
+                    return NotFound(new { message = "ไม่พบรายการในตะกร้า" });
+
+                _context.Cart.Remove(cart);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "ลบออกจากตะกร้าแล้ว" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // DELETE: Cart/ClearCart/{uid}
+        [HttpDelete("ClearCart/{uid}")]
+        public async Task<IActionResult> ClearCart(int uid)
+        {
+            try
+            {
+                var cartItems = await _context.Cart.Where(c => c.uid == uid).ToListAsync();
+
+                if (cartItems.Count == 0)
+                    return NotFound(new { message = "ไม่มีสินค้าในตะกร้า" });
+
+                _context.Cart.RemoveRange(cartItems);
+                await _context.SaveChangesAsync();
+
+                return Ok(new
                 {
-                    File = new FileDescription(dto.image_url.FileName, stream),
-                    PublicId = Guid.NewGuid().ToString() // ตั้งชื่อไม่ซ้ำ
-                };
-
-                var uploadResult = await cloudinary.UploadAsync(uploadParams);
-
-                if (uploadResult.Error != null)
-                    return BadRequest($"อัปโหลดรูปภาพไม่สำเร็จ: {uploadResult.Error.Message}");
-
-                //  บันทึกรูปใหม่
-                game.image_url = uploadResult.SecureUrl.ToString();
+                    message = "ล้างตะกร้าเรียบร้อย",
+                    items_removed = cartItems.Count
+                });
             }
-
-            //  บันทึกลงฐานข้อมูล
-            _context.Games.Update(game);
-            await _context.SaveChangesAsync();
-
-            return Ok(new
+            catch (Exception ex)
             {
-                message = "อัปเดตข้อมูลเกมสำเร็จ",
-                data = game
-            });
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
-        // DELETE /Game/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGame(int id)
+        // GET: Cart/GetCartCount/{uid}
+        [HttpGet("GetCartCount/{uid}")]
+        public async Task<IActionResult> GetCartCount(int uid)
         {
-            var game = await _context.Games.FindAsync(id);
-            if (game == null)
+            try
             {
-                return NotFound(new { message = "เกมไม่พบ" });
+                var count = await _context.Cart.CountAsync(c => c.uid == uid);
+                return Ok(new { count });
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
 
-            _context.Games.Remove(game);
-            await _context.SaveChangesAsync();
+        // GET: Cart/GetCartTotal/{uid}
+        [HttpGet("GetCartTotal/{uid}")]
+        public async Task<IActionResult> GetCartTotal(int uid)
+        {
+            try
+            {
+                var total = await _context.Cart
+                    .Where(c => c.uid == uid)
+                    .Include(c => c.Game)
+                    .SumAsync(c => c.Game.price);
 
-            return Ok(new { message = "ลบเกมเรียบร้อยแล้ว" });
+                return Ok(new { total });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
     }
 }
