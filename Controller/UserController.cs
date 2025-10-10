@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Gameshop_Api.Controllers
 {
@@ -73,6 +74,42 @@ namespace Gameshop_Api.Controllers
 
             return Ok(user);
         }
+        [HttpPost("topup")]
+        public async Task<IActionResult> TopUpWallet([FromBody] DTOs.Wallet walletDto)
+        {
+            var existingWallet = await _context.Wallets.FindAsync(walletDto.uid);
+            bool isNewWallet = false;
+            if (existingWallet == null)
+            {
+                // ถ้าไม่มี wallet สำหรับผู้ใช้คนนี้ ให้สร้างใหม่
+                existingWallet = new Models.Wallet
+                {
+                    uid = walletDto.uid,
+                    balance = walletDto.balance
+                };
+                _context.Wallets.Add(existingWallet);
+                isNewWallet = true;
+            }
+            else
+            {
 
+                existingWallet.balance += walletDto.balance;
+                _context.Wallets.Update(existingWallet);
+            }
+
+            var transaction = new Gameshop_Api.Models.Transaction
+            {
+                uid = walletDto.uid,
+                transaction_type = "เติมเงิน",
+                reference_id = Guid.NewGuid().ToString(),
+                amount_value = walletDto.balance,
+                detail = isNewWallet ? "Initial wallet creation and top-up" : "Wallet top-up",
+                status = "COMPLETED",
+                created_at = DateTime.Now
+            };
+            _context.Transactions.Add(transaction);
+            await _context.SaveChangesAsync();
+            return Ok(existingWallet);
+        }
     }
 }
