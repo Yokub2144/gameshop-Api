@@ -100,7 +100,7 @@ namespace Gameshop_Api.Controllers
             var transaction = new Gameshop_Api.Models.Transaction
             {
                 uid = walletDto.uid,
-                transaction_type = "เติมเงิน",
+                transaction_type = "TOPUP",
                 reference_id = Guid.NewGuid().ToString(),
                 amount_value = walletDto.balance,
                 detail = isNewWallet ? "Initial wallet creation and top-up" : "Wallet top-up",
@@ -110,6 +110,15 @@ namespace Gameshop_Api.Controllers
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
             return Ok(existingWallet);
+        }
+        [HttpGet("wallet/{uid}")]
+        public async Task<IActionResult> GetWalletByUserId(int uid)
+        {
+            var wallet = await _context.Wallets.FindAsync(uid);
+            if (wallet == null)
+                return NotFound(new { message = "Wallet not found" });
+
+            return Ok(wallet);
         }
     }
 }
