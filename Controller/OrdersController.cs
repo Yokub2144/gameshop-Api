@@ -45,6 +45,29 @@ namespace Gameshop_Api.Controllers
                     return BadRequest(new { message = "ตะกร้าสินค้าว่างเปล่า" });
                 }
 
+                // 🌟 แก้ไข: ตรวจสอบเกมที่ผู้ใช้เป็นเจ้าของอยู่แล้ว โดยใช้ตาราง Orders 🌟
+                var cartGameIds = cartItems.Select(item => item.game_id).ToList();
+
+                var ownedGames = await (from order in _context.Orders
+                                        join orderDetail in _context.OrderDetails on order.oid equals orderDetail.oid
+                                        join game in _context.Games on orderDetail.game_id equals game.game_Id
+                                        where order.uid == dto.uid && cartGameIds.Contains(Convert.ToInt32(orderDetail.game_id))
+                                        select game.title)
+                                        .Distinct() // ใช้ Distinct เพื่อให้ได้ชื่อเกมที่ไม่ซ้ำ
+                                        .ToListAsync();
+
+                if (ownedGames.Any())
+                {
+                    var ownedGameTitles = string.Join(", ", ownedGames);
+                    await transaction.RollbackAsync();
+                    return BadRequest(new
+                    {
+                        message = $"ไม่สามารถดำเนินการสั่งซื้อได้: มีเกมที่คุณเป็นเจ้าของอยู่แล้วในตะกร้า: {ownedGameTitles}",
+                        owned_games = ownedGameTitles
+                    });
+                }
+                // 🌟 สิ้นสุดการตรวจสอบ 🌟
+
                 var totalPrice = cartItems.Sum(item => item.price);
                 var purchasedGameTitles = string.Join(", ", cartItems.Select(item => item.title));
 
@@ -55,6 +78,7 @@ namespace Gameshop_Api.Controllers
                     await transaction.RollbackAsync();
                     return BadRequest(new { message = "ยอดเงินใน Wallet ไม่เพียงพอ" });
                 }
+
                 var newOrder = new Gameshop_Api.Models.Orders
                 {
                     uid = dto.uid,
@@ -63,7 +87,6 @@ namespace Gameshop_Api.Controllers
                 };
                 _context.Orders.Add(newOrder);
                 await _context.SaveChangesAsync();
-
 
                 foreach (var item in cartItems)
                 {
@@ -74,6 +97,8 @@ namespace Gameshop_Api.Controllers
                         price = item.price
                     };
                     _context.OrderDetails.Add(orderDetail);
+
+                    // ❌ ลบการอ้างอิงถึง _context.UserGames.Add(userGame) ออกแล้ว
 
                     var cartToRemove = await _context.Cart.FirstOrDefaultAsync(c => c.uid == dto.uid && c.game_id == item.game_id);
                     if (cartToRemove != null)
@@ -89,7 +114,7 @@ namespace Gameshop_Api.Controllers
                 {
                     uid = dto.uid,
                     transaction_type = "PURCHASE",
-                    reference_id = newOrder.oid.ToString(), // ใช้ oid เป็น Reference
+                    reference_id = newOrder.oid.ToString(),
                     amount_value = -totalPrice,
                     detail = $"Purchase order ID: {newOrder.oid}. Games: {purchasedGameTitles}",
                     status = "COMPLETED",
