@@ -178,8 +178,28 @@ namespace Gameshop_Api.Controllers
 
             return Ok(new { message = "ลบเกมเรียบร้อยแล้ว" });
         }
+
+        [HttpGet("getGameByUserId/{uid}")]
+        public async Task<IActionResult> getGameByUserId(int uid)
+        {
+            var purchasedGames = await (from order in _context.Orders
+                                        join orderDetail in _context.OrderDetails on order.oid equals orderDetail.oid
+                                        join game in _context.Games on orderDetail.game_id equals game.game_Id
+                                        where order.uid == uid
+                                        select new
+                                        {
+                                            game.game_Id,
+                                            game.title,
+                                            game.detail,
+                                            game.category,
+                                            game.price,
+                                            game.release_date,
+                                            game.image_url,
+                                            game.rank
+                                        }).ToListAsync();
+
+            return Ok(purchasedGames);
+        }
     }
-
-
 
 }
